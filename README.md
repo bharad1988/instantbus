@@ -18,19 +18,20 @@ Produces a message for a topic
 Subscribes to a topic over the bus via n/w and get messages as they arrive.
 
 ## Example usage of SDK
-`
+```
 cd subs
 go run main.go
-`
+// server starts at "localhost:5001"
+```
 ### Subscribe to bus service and a topic
-`
+```
 	ss := sbclient.SubscriptionService{}
  	ss.StartSubscriptionService("localhost:5001")
  	ss.SubscribeTopic("world")
 	ss.SubscribeTopic("earth")
-`
+```
 ### Add a publisher to bus service
-`
+```
   	ss2 := sbclient.SubscriptionService{}
 	ss2.StartPublisher("localhost:5001")
 	for i := 0; i < 100; i++ {
@@ -40,4 +41,4 @@ go run main.go
 		ss2.SendMessage("world", testMsg)
 		ss2.SendMessage("earth", testMsg)
 	}
-`
+```
