@@ -32,9 +32,6 @@ var TopicMessage map[string][][]byte
 var TopicSubs map[string][]subStatus
 var SubConns map[string]sub_pb.PushClient
 
-// event loop trigger
-var trigger chan bool
-
 // SayHello implements helloworld.GreeterServer
 func (s *server) SendMessage(ctx context.Context, in *pb.MessageRequest) (*pb.MessageReply, error) {
 	log.Printf("Received: %v", in.GetTopic())
@@ -63,7 +60,6 @@ func main() {
 	TopicSubs = make(map[string][]subStatus)
 	TopicMessage = make(map[string][][]byte)
 	SubConns = make(map[string]sub_pb.PushClient)
-	trigger = make(chan bool)
 	go pushLoop()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {

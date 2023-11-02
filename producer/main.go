@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	defaultName = "world"
+	defaultName = "earth"
 )
 
 var (
