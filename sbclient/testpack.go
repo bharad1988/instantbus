@@ -1,4 +1,4 @@
-package testpack
+package sbclient
 
 import (
 	"context"
@@ -31,8 +31,9 @@ type server struct {
 }
 
 type SubscriptionService struct {
-	Conn *grpc.ClientConn
-	once sync.Once
+	Conn   *grpc.ClientConn
+	once   sync.Once
+	Client bus_pb.BusClient
 }
 
 // Handle pushed messages
@@ -40,6 +41,16 @@ func (s *server) PushMessage(ctx context.Context, in *pb.PushMessageRequest) (*p
 	log.Printf("𝙩𝙤𝙥𝙞𝙘 : %s :: 𝙢𝙚𝙨𝙨𝙖𝙜𝙚 :- %s", in.GetTopic(), in.GetMessage())
 	e := time.Now().Unix()
 	return &pb.PushMessageReply{Ts: &e}, nil
+}
+
+func (s *SubscriptionService) StartPublisher(serviceBus string) {
+	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	s.Conn = conn
+	s.Client = bus_pb.NewBusClient(s.Conn)
+
 }
 
 func (s *SubscriptionService) StartSubscriptionService(serviceBus string) {
@@ -50,6 +61,7 @@ func (s *SubscriptionService) StartSubscriptionService(serviceBus string) {
 			log.Fatalf("did not connect: %v", err)
 		}
 		s.Conn = conn
+		s.Client = bus_pb.NewBusClient(s.Conn)
 		rand.NewSource(time.Now().UnixNano())
 		// generate random integer between 10 and 20
 		port = rand.Intn(60000) + 1024
@@ -75,15 +87,26 @@ func startListner(once *sync.Once, task func()) {
 func (s *SubscriptionService) SubscribeTopic(topic string) {
 	flag.Parse()
 	// Set up a connection to the server.
-	c := bus_pb.NewBusClient(s.Conn)
 	clientID := fmt.Sprintf("localhost:%d", port)
 
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	r, err := c.SubTopic(ctx, &bus_pb.SubscribeRequest{Subscriber: &clientID, Topic: &topic})
+	r, err := s.Client.SubTopic(ctx, &bus_pb.SubscribeRequest{Subscriber: &clientID, Topic: &topic})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Subscription status - : %t", r.GetDone())
+}
+
+func (s *SubscriptionService) SendMessage(topic string, message []byte) {
+	// Contact the server and print out its response.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r, err := s.Client.SendMessage(ctx, &bus_pb.MessageRequest{Topic: &topic, Message: message})
+	if err != nil {
+		log.Fatalf("could not greet: %v", err)
+	}
+	log.Printf("Sent at: %d", r.GetTs())
+
 }
