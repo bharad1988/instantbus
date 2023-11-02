@@ -1,0 +1,28 @@
+option go_package = "instantbus/busproto";
+// The greeting service definition.
+service Bus {
+  rpc SendMessage (MessageRequest) returns (MessageReply) {}
+  rpc SubTopic (SubscribeRequest) returns (SubscribeReply) {}
+}
+
+// The request message containing the user's name.
+message MessageRequest {
+  required string topic = 1;
+  required bytes message = 2;
+}
+
+// The response message containing the greetings
+message MessageReply {
+  required int64 ts = 1;
+}
+
+// subscribe to a topic
+message SubscribeRequest {
+  required string subscriber = 1;
+  required string topic = 2;
+}
+
+// The response message containing the greetings
+message SubscribeReply {
+  required bool done = 1;
+}

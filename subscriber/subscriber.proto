@@ -1,0 +1,17 @@
+option go_package = "instantbus/subscriber";
+// The greeting service definition.
+service Push {
+  // Sends a greeting
+  rpc PushMessage (PushMessageRequest) returns (PushMessageReply) {}
+}
+
+// The request message containing the user's name.
+message PushMessageRequest {
+  required string topic = 1;
+  required bytes message = 2;
+}
+
+// The response message containing the greetings
+message PushMessageReply {
+  required int64 ts = 1;
+}
