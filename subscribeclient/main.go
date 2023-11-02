@@ -25,15 +25,14 @@ var (
 	port int
 )
 
-// server is used to implement helloworld.GreeterServer.
+// Push service (listen to topic)
 type server struct {
 	pb.UnimplementedPushServer
 }
 
-// SayHello implements helloworld.GreeterServer
+// Handle pushed messages
 func (s *server) PushMessage(ctx context.Context, in *pb.PushMessageRequest) (*pb.PushMessageReply, error) {
-	log.Printf("Received: %v", in.GetTopic())
-	log.Printf("Received: %v", string(in.GetMessage()))
+	log.Printf("𝙩𝙤𝙥𝙞𝙘 : %s :: 𝙢𝙚𝙨𝙨𝙖𝙜𝙚 :- %s", in.GetTopic(), in.GetMessage())
 	e := time.Now().Unix()
 	return &pb.PushMessageReply{Ts: &e}, nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -29,14 +30,16 @@ func main() {
 	}
 	defer conn.Close()
 	c := pb.NewBusClient(conn)
-	testMsg := []byte("test message 2")
-
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.SendMessage(ctx, &pb.MessageRequest{Topic: name, Message: testMsg})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+	for i := 0; i < 100; i++ {
+		m := fmt.Sprintf("test %d", i)
+		testMsg := []byte(m)
+		// Contact the server and print out its response.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		r, err := c.SendMessage(ctx, &pb.MessageRequest{Topic: name, Message: testMsg})
+		if err != nil {
+			log.Fatalf("could not greet: %v", err)
+		}
+		log.Printf("Sent at: %d", r.GetTs())
 	}
-	log.Printf("Greeting: %d", r.GetTs())
 }
