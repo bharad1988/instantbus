@@ -42,3 +42,4 @@ go run main.go
 		ss2.SendMessage("earth", testMsg)
 	}
 ```
+reference: For encryption and descryption https://medium.com/insiderengineering/aes-encryption-and-decryption-in-golang-php-and-both-with-full-codes-ceb598a34f41
