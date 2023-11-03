@@ -90,6 +90,7 @@ func GetAESDecrypted(ciphertext []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// Picked up the encrypt and decrypt from internet
 // PKCS5UnPadding  pads a certain blob of data with necessary data to be used in AES block cipher
 func PKCS5UnPadding(src []byte) []byte {
 	length := len(src)
