@@ -25,21 +25,33 @@ var (
 	port int
 )
 
+type queueData struct {
+	messages [][]byte
+	index int
+}
+
 // Push service (listen to topic)
 type server struct {
 	pb.UnimplementedPushServer
+	TopicQueue map[string]queueData
 }
 
 type SubscriptionService struct {
 	Conn   *grpc.ClientConn
 	once   sync.Once
 	Client bus_pb.BusClient
+	subServer server
 }
 
 // Handle pushed messages
 func (s *server) PushMessage(ctx context.Context, in *pb.PushMessageRequest) (*pb.PushMessageReply, error) {
-	log.Printf("𝙩𝙤𝙥𝙞𝙘 : %s :: 𝙢𝙚𝙨𝙨𝙖𝙜𝙚 :- %s", in.GetTopic(), in.GetMessage())
+	// log.Printf("𝙩𝙤𝙥𝙞𝙘 : %s :: 𝙢𝙚𝙨𝙨𝙖𝙜𝙚 :- %s", in.GetTopic(), in.GetMessage())
+	messageData := s.TopicQueue[in.GetTopic()]
+	messageData.messages = append(messageData.messages, in.GetMessage())
+	s.TopicQueue[in.GetTopic()] = messageData
 	e := time.Now().Unix()
+	// log.Printf("topic - %s , message %s ", in.GetTopic(),s.TopicQueue[in.GetTopic()])
+
 	return &pb.PushMessageReply{Ts: &e}, nil
 }
 
@@ -69,10 +81,12 @@ func (s *SubscriptionService) StartSubscriptionService(serviceBus string) {
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		s := grpc.NewServer()
-		pb.RegisterPushServer(s, &server{})
+		grpcServer := grpc.NewServer()
+		s.subServer = server{}
+		s.subServer.TopicQueue = make(map[string]queueData)
+		pb.RegisterPushServer(grpcServer, &s.subServer)
 		log.Printf("server listening at %v", lis.Addr())
-		if err := s.Serve(lis); err != nil {
+		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	}
@@ -97,6 +111,19 @@ func (s *SubscriptionService) SubscribeTopic(topic string) {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Subscription status - : %t", r.GetDone())
+}
+
+func (s *SubscriptionService) GetAllMessages(topic string) [][]byte{
+	return s.subServer.TopicQueue[topic].messages
+}
+
+func (s *SubscriptionService) GetAllUnreadMessages(topic string) [][]byte {
+	queueData :=  s.subServer.TopicQueue[topic]
+	l := len(queueData.messages)
+	slice := queueData.messages[s.subServer.TopicQueue[topic].index:l]
+	queueData.index = l
+	s.subServer.TopicQueue[topic] = queueData
+	return slice
 }
 
 func (s *SubscriptionService) SendMessage(topic string, message []byte) {

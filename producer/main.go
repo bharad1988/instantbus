@@ -30,7 +30,7 @@ func main() {
 	}
 	defer conn.Close()
 	c := pb.NewBusClient(conn)
-	for i := 0; i < 100; i++ {
+	for i := 100; i < 200; i++ {
 		m := fmt.Sprintf("test %d", i)
 		testMsg := []byte(m)
 		// Contact the server and print out its response.
