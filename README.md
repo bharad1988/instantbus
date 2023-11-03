@@ -45,4 +45,42 @@ go run main.go
 		ss2.SendMessage("earth", testMsg)
 	}
 ```
+
+**More sample code with encrypt and decrypt**
+
+Encrypt a message and send
+```
+	fmt.Println("This is an original:", plainText)
+	encrypted, err := GetAESEncrypted(plainText)
+	if err != nil {
+		fmt.Println("Error during encryption", err)
+	}
+
+	ss2.SendMessage("earth", encrypted)
+	fmt.Println("This is an encrypted:", encrypted)
+```
+Receive all messages
+```
+	fmt.Println("len of messages ", len(ss.GetAllMessages("earth")))
+	for i := 0; i < len(ss.GetAllMessages("earth")); i++ {
+		fmt.Printf("All message - %s", ss.GetAllMessages("earth")[i])
+	}
+
+```
+Receive only unread messages
+```
+	newMessages := ss.GetAllUnreadMessages("earth")
+	for _, m := range newMessages {
+		fmt.Printf("topic : earth : message %s \n", m)
+	}
+```
+Receive and decrypt messages
+```
+	ss2.SendMessage("earth", encrypted)
+	ss.GetAllUnreadMessages("earth")
+	for _, m := range newMessages {
+		d, _ := GetAESDecrypted(m)
+		fmt.Printf("topic : earth : message %s \n", d)
+	}
+```
 reference: For encryption and descryption https://medium.com/insiderengineering/aes-encryption-and-decryption-in-golang-php-and-both-with-full-codes-ceb598a34f41
