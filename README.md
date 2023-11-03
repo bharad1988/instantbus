@@ -1,7 +1,7 @@
 # instantbus
 A standalone service bus over network written in golang.
 
-**_caveat: No error handling yet. Data races to be handled_** 
+**_caveat: No error handling yet. Go runtime data races have been fixed_** 
 
 ## Service Bus component
 - Allows services to subsribe to a topic .
