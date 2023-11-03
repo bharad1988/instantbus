@@ -1,5 +1,5 @@
 # instantbus
-A standalone service bus over network written in golang.
+A standalone service bus (Non-persistant and stateless as of now ) over network written in golang. 
 
 **_caveat: No error handling yet. Data races reported with -race option have been fixed_** 
 
