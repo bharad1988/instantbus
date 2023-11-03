@@ -1,5 +1,7 @@
 # instantbus
-A standalone service bus over network written in golang
+A standalone service bus over network written in golang.
+
+**_caveat: No error handling yet_**
 
 ## Service Bus component
 - Allows services to subsribe to a topic .
@@ -18,8 +20,9 @@ Produces a message for a topic
 Subscribes to a topic over the bus via n/w and get messages as they arrive.
 
 ## Example usage of SDK
+sclient directory/package has the SDK for publisher and subscriber
 ```
-cd subs
+cd example
 go run main.go
 // server starts at "localhost:5001"
 ```
