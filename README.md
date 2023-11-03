@@ -5,11 +5,11 @@ A standalone service bus over network written in golang
 - Allows services to subsribe to a topic .
 - Receives messages in byte array over a topic (serialized), pushes it to all subscribers for that topic
 - Subscribers need to be aware of de-serialization method.
-How to start bus service
-'''
+### How to start bus service
+```
 cd busservice
 go run main.go
-'''
+```
 
 ## Producer/Publisher
 Produces a message for a topic
