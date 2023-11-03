@@ -16,7 +16,7 @@ go run main.go
 ## Producer/Publisher
 Produces a message for a topic
 
-## Consumer/Subsriber
+## Consumer/Subsrciber
 Subscribes to a topic over the bus via n/w and get messages as they arrive.
 
 ## Example usage of SDK
