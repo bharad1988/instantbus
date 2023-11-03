@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	pb "github.com/bharad1988/instantbus/busproto"
@@ -32,11 +33,15 @@ var TopicMessage map[string][][]byte
 var TopicSubs map[string][]subStatus
 var SubConns map[string]sub_pb.PushClient
 
+var messagesLock sync.RWMutex
+
 // SayHello implements helloworld.GreeterServer
 func (s *server) SendMessage(ctx context.Context, in *pb.MessageRequest) (*pb.MessageReply, error) {
 	log.Printf("Received: %v", in.GetTopic())
 	log.Printf("Received: %v", in.GetMessage())
+	messagesLock.Lock()
 	TopicMessage[in.GetTopic()] = append(TopicMessage[in.GetTopic()], in.GetMessage())
+	messagesLock.Unlock()
 	e := time.Now().Unix()
 	return &pb.MessageReply{Ts: &e}, nil
 }
@@ -82,16 +87,18 @@ func pushLoop() {
 
 func pushMessages() {
 	// log.Println("Pushing all messages")
-	for topic, v := range TopicMessage {
+	messagesLock.RLock()
+	for topic, messages := range TopicMessage {
 		subs := TopicSubs[topic]
 		for j, sub := range subs {
-			for i := sub.index; i < len(v); i++ {
-				pushMessageToSub(sub.subscriber, topic, v[i])
+			for i := sub.index; i < len(messages); i++ {
+				pushMessageToSub(sub.subscriber, topic, messages[i])
 				sub.index++
 			}
 			subs[j] = sub
 		}
 	}
+	messagesLock.RUnlock()
 }
 
 func createCon(sub string) {

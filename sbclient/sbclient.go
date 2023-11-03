@@ -27,28 +27,32 @@ var (
 
 type queueData struct {
 	messages [][]byte
-	index int
+	index    int
 }
 
 // Push service (listen to topic)
 type server struct {
 	pb.UnimplementedPushServer
 	TopicQueue map[string]queueData
+	m          sync.RWMutex
 }
 
 type SubscriptionService struct {
-	Conn   *grpc.ClientConn
-	once   sync.Once
-	Client bus_pb.BusClient
+	Conn      *grpc.ClientConn
+	once      sync.Once
+	Client    bus_pb.BusClient
 	subServer server
+	subLock   sync.RWMutex
 }
 
 // Handle pushed messages
 func (s *server) PushMessage(ctx context.Context, in *pb.PushMessageRequest) (*pb.PushMessageReply, error) {
 	// log.Printf("𝙩𝙤𝙥𝙞𝙘 : %s :: 𝙢𝙚𝙨𝙨𝙖𝙜𝙚 :- %s", in.GetTopic(), in.GetMessage())
+	s.m.Lock()
 	messageData := s.TopicQueue[in.GetTopic()]
 	messageData.messages = append(messageData.messages, in.GetMessage())
 	s.TopicQueue[in.GetTopic()] = messageData
+	s.m.Unlock()
 	e := time.Now().Unix()
 	// log.Printf("topic - %s , message %s ", in.GetTopic(),s.TopicQueue[in.GetTopic()])
 
@@ -68,6 +72,7 @@ func (s *SubscriptionService) StartPublisher(serviceBus string) {
 func (s *SubscriptionService) StartSubscriptionService(serviceBus string) {
 	// defer conn.Close()
 	start := func() {
+		s.subLock.Lock()
 		conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatalf("did not connect: %v", err)
@@ -85,20 +90,23 @@ func (s *SubscriptionService) StartSubscriptionService(serviceBus string) {
 		s.subServer = server{}
 		s.subServer.TopicQueue = make(map[string]queueData)
 		pb.RegisterPushServer(grpcServer, &s.subServer)
+		s.subLock.Unlock()
 		log.Printf("server listening at %v", lis.Addr())
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	}
-	go startListner(&s.once, start)
+	go s.startListner(start)
 	time.Sleep(100 * time.Millisecond)
 }
 
-func startListner(once *sync.Once, task func()) {
-	once.Do(task)
+func (s *SubscriptionService) startListner(task func()) {
+	s.once.Do(task)
 }
 
 func (s *SubscriptionService) SubscribeTopic(topic string) {
+	s.subLock.RLock()
+	defer s.subLock.RUnlock()
 	flag.Parse()
 	// Set up a connection to the server.
 	clientID := fmt.Sprintf("localhost:%d", port)
@@ -113,16 +121,20 @@ func (s *SubscriptionService) SubscribeTopic(topic string) {
 	log.Printf("Subscription status - : %t", r.GetDone())
 }
 
-func (s *SubscriptionService) GetAllMessages(topic string) [][]byte{
+func (s *SubscriptionService) GetAllMessages(topic string) [][]byte {
+	s.subServer.m.RLock()
+	defer s.subServer.m.RUnlock()
 	return s.subServer.TopicQueue[topic].messages
 }
 
 func (s *SubscriptionService) GetAllUnreadMessages(topic string) [][]byte {
-	queueData :=  s.subServer.TopicQueue[topic]
+	s.subServer.m.RLock()
+	queueData := s.subServer.TopicQueue[topic]
 	l := len(queueData.messages)
 	slice := queueData.messages[s.subServer.TopicQueue[topic].index:l]
 	queueData.index = l
 	s.subServer.TopicQueue[topic] = queueData
+	s.subServer.m.RUnlock()
 	return slice
 }
 
